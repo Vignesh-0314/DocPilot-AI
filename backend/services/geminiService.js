@@ -23,7 +23,7 @@ export const analyzeDocumentWithGemini = async (fileBuffer, mimeType, originalNa
     const genAI = new GoogleGenerativeAI(apiKey);
 
     // Try high-precision multimodal models in order
-    const candidateModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
+    const candidateModels = ['gemini-flash-latest', 'gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-pro-latest'];
     let responseText = null;
 
     const base64Data = fileBuffer.toString('base64');
