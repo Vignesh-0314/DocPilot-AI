@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { dbService } from '../services/dbService.js';
 import { emailVerificationService } from '../services/emailVerificationService.js';
+import { sendVerificationEmail } from '../services/emailService.js';
 import { registerSchema, loginSchema } from '../validators/authValidator.js';
 import dotenv from 'dotenv';
 
@@ -30,8 +31,11 @@ export const sendVerificationLink = async (req, res) => {
       originUrl
     );
 
+    // Dispatch real email via SMTP / Ethereal
+    await sendVerificationEmail(email, name, verificationUrl);
+
     res.json({
-      message: 'Verification email link generated successfully.',
+      message: `Verification link sent to ${email}`,
       email,
       verificationUrl,
       expiresAt
@@ -99,6 +103,9 @@ export const resendVerificationLink = async (req, res) => {
     if (!result.success) {
       return res.status(400).json({ error: result.error });
     }
+
+    const { name } = result.record || { name: 'User' };
+    await sendVerificationEmail(email, name, result.verificationUrl);
 
     res.json({
       message: 'New verification link sent successfully.',

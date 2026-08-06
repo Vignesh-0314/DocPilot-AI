@@ -98,7 +98,8 @@ export const emailVerificationService = {
     return {
       success: true,
       verificationUrl,
-      expiresAt
+      expiresAt,
+      record
     };
   }
 };
