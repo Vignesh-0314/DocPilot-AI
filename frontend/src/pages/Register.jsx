@@ -203,27 +203,17 @@ export const Register = () => {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 text-center space-y-2">
-                <p className="text-xs text-slate-600">
-                  Click the verification link sent to <strong className="text-slate-900">{email}</strong> to complete registration and automatically log in.
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200/80 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-ocean-100 text-ocean-600 flex items-center justify-center mx-auto">
+                  <MailCheck className="w-6 h-6 text-ocean-600" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900">Verification Link Sent</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  We sent an email verification link to <strong className="text-slate-900 font-bold">{email}</strong>.
+                  <br /><br />
+                  Please open your email inbox and click <strong>"Confirm Email Address"</strong> to activate your account and automatically log in.
                 </p>
               </div>
-
-              {/* Quick Demo Link Banner */}
-              {demoVerificationUrl && (
-                <div className="bg-ocean-50 border border-ocean-200 p-4 rounded-2xl text-xs space-y-2">
-                  <div className="flex items-center gap-2 font-bold text-ocean-900">
-                    <ExternalLink className="w-4 h-4 text-ocean-600 shrink-0" />
-                    <span>Demo Instant Verification Link</span>
-                  </div>
-                  <a
-                    href={demoVerificationUrl}
-                    className="block text-center py-2.5 px-3 rounded-xl bg-ocean-600 text-white font-bold text-xs hover:bg-ocean-700 transition-all shadow-sm"
-                  >
-                    Click to Confirm & Log In →
-                  </a>
-                </div>
-              )}
 
               <div className="flex items-center justify-between text-xs pt-2">
                 <button
