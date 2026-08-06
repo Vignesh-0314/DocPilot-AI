@@ -1,96 +1,153 @@
-# DocPilot AI - Intelligent Document Processing (IDP)
+# DocPilot AI - Intelligent Document Processing (IDP) & Fraud Audit Platform
 
-DocPilot AI is a production-ready Full Stack AI application built for Intelligent Document Processing. It automates business document understanding (Invoices, Resumes, Contracts, Medical Reports, Bank Statements, Government Documents) using Google Gemini API, extracting structured JSON parameters, evaluating operational/legal risks, generating executive summaries, and providing actionable recommendations.
+> **Transform unstructured business documents into structured intelligence, automated health scores, and fraud audit reports powered by Google Gemini Multimodal AI.**
+
+---
+
+## 📌 Problem Statement
+
+In modern enterprise workflows, organizations receive thousands of unstructured documents daily—including **Invoices, Resumes, Legal Contracts, Medical Reports, Bank Statements, and Government IDs**.
+
+Manual processing of these documents leads to severe operational bottlenecks:
+
+1. **High Operational Costs & Slow Turnaround**: Manual data entry and document auditing require hours of human effort per document.
+2. **Human Error & Inconsistency**: Traditional OCR fails on complex layouts, misreading critical fields like total amounts, tax numbers, candidate details, or expiration dates.
+3. **Document Fraud & Tampering**: Fraudulent invoices, altered contract dates, missing stamps, or fabricated credentials often bypass manual inspection, leading to financial loss or regulatory non-compliance.
+4. **Lack of Standardized Health Metrics**: Businesses lack a unified metric to assess whether a document is complete, legible, and compliant before taking administrative action.
+
+---
+
+## 💡 How DocPilot AI Solves This Problem
+
+**DocPilot AI** is an enterprise-grade **Intelligent Document Processing (IDP)** platform built with React, Express, and Google Gemini Multimodal AI. It automates end-to-end document understanding, compliance auditing, and data extraction in seconds:
+
+- ⚡ **Zero Manual Data Entry**: Upload any document (PDF, PNG, JPG) and automatically extract key-value data points into structured JSON.
+- 🩺 **AI Document Health Score (0–100)**: Evaluates completeness, OCR legibility, missing mandatory fields, and formatting quality to assign a clear health status (*Excellent, Good, Needs Review, Poor*).
+- 🛡️ **AI Fraud & Tampering Detection**: Scans for visual anomalies, missing signatures/stamps, altered dates, illegal character syntax, and font inconsistencies.
+- 📋 **Executive Summaries & Risk Audits**: Generates automated summaries, identifies legal/financial risk factors, and provides actionable recommendation checklists.
+- 🚀 **Cloud & Hackathon Ready**: Built on a hybrid architecture supporting **Supabase PostgreSQL** with an automatic **zero-config in-memory database fallback**.
 
 ---
 
 ## 🌟 Key Features
 
-- 🔐 **JWT Authentication & Security**: Register, Login, password hashing with bcrypt, protected routes, Zod input validation.
-- 🎨 **Ocean Blue Modern SaaS UI**: Notion AI & ChatGPT-inspired interface built with React, Vite, Tailwind CSS, Framer Motion animations, and Lucide icons.
-- 📄 **Multimodal Drag & Drop Upload**: Upload PDF, PNG, JPG, or JPEG files with live progress animation and real-time document preview.
-- 🧠 **Google Gemini Multimodal AI Engine**: Direct document analysis returning structured JSON response:
-  - Document Type classification
-  - Confidence Score (%)
-  - Executive Summary
-  - Extracted Key-Value structured business metrics
-  - Risk Score Level (Low, Medium, High) with detailed risk explanation
-  - Actionable Recommendations checklist
-- ⚡ **Supabase PostgreSQL & Fallback DB**: Native Supabase integration with automatic in-memory fallback for zero-config hackathon execution out of the box.
+### 🔐 1. Authentication & Security
+- User registration and login powered by **JSON Web Tokens (JWT)** and **bcryptjs** password hashing.
+- Request payload validation using **Zod** schemas.
+- Protected frontend routes and automated HTTP request headers via Axios interceptors.
+
+### 🧠 2. Multimodal AI Analysis Engine (Google Gemini)
+- **Automatic Document Classification**: Detects document type (*Invoice, Resume, Contract, Medical Report, Bank Statement, Government Document, etc.*).
+- **Structured Data Extraction**: Reads complex tables, headers, and footers to extract clean parameters (*Total Amount, Issue Date, Candidate Name, Skills, Vendor Name, Invoice Number*).
+- **Executive Summary**: Generates concise executive overviews for quick decision-making.
+- **Risk Assessment**: Categorizes overall risk (*Low, Medium, High*) with detailed risk explanations.
+
+### 🩺 3. AI Document Health Score
+- **Range**: `0 - 100` score mapped to 4 status tiers:
+  - `90–100` $\rightarrow$ **Excellent** (Green)
+  - `75–89` $\rightarrow$ **Good** (Yellow)
+  - `60–74` $\rightarrow$ **Needs Review** (Orange)
+  - `< 60` $\rightarrow$ **Poor** (Red)
+- Includes an animated SVG circular progress gauge and a checklist of document health factors.
+
+### 🛡️ 4. AI Fraud & Tampering Detection
+- Evaluates document authenticity and outputs a **Tampering Suspicion Score (0–100%)** and **Fraud Risk Level**.
+- Audits for:
+  - Missing signatures or official physical ink stamps
+  - Altered dates or illegal numerical syntax
+  - Missing mandatory entity fields
+  - Blurred text, low OCR quality, and font inconsistency
+- Displays severity badges (*High, Medium, Low*) for detected anomalies.
+
+### 🎨 5. Modern Ocean Blue UI & Responsive Design
+- Glassmorphic card layouts built with **React 18**, **Tailwind CSS**, **Framer Motion**, and **Lucide React Icons**.
+- Interactive drag-and-drop document upload zone with live upload progress animations.
+- Embedded side-by-side original document viewer for PDF and image formats.
 
 ---
 
 ## 📁 Tech Stack
 
-### Frontend
+### **Frontend**
 - **Framework**: React 18, Vite, React Router DOM v7
-- **Styling**: Tailwind CSS (Ocean Blue custom palette), Framer Motion, Lucide React Icons
-- **HTTP Client**: Axios with automatic JWT Authorization interceptor
+- **Styling**: Tailwind CSS (Custom Ocean Blue Palette), Glassmorphism, Framer Motion
+- **Icons**: Lucide React
+- **HTTP Client**: Axios with JWT Interceptor
 
-### Backend
+### **Backend**
 - **Server**: Node.js, Express.js
-- **Auth**: JWT (`jsonwebtoken`), `bcryptjs`, `zod`
-- **Uploads**: `multer` memory storage (PDF, PNG, JPG, JPEG)
-- **AI**: `@google/generative-ai` (Gemini 1.5 / 2.0 Flash multimodal engine)
-- **Database**: Supabase PostgreSQL (`@supabase/supabase-js`) + Fallback store
+- **AI Multimodal Engine**: `@google/generative-ai` (`gemini-flash-latest`, `gemini-2.0-flash`)
+- **Authentication**: JWT (`jsonwebtoken`), `bcryptjs`, `zod`
+- **FileUpload**: `multer` memory storage (PDF, PNG, JPG, JPEG)
+- **Database**: Supabase PostgreSQL (`@supabase/supabase-js`) + In-Memory Fallback Store
+
+---
+
+## 🔗 API Reference
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/register` | Register new user account |
+| `POST` | `/api/auth/login` | Authenticate user & issue JWT token |
+| `GET`  | `/api/auth/me` | Fetch active user profile |
+| `POST` | `/api/document/upload` | Upload document (PDF, PNG, JPG, JPEG up to 10MB) |
+| `POST` | `/api/document/analyze` | Process document with Gemini AI Engine |
+| `GET`  | `/api/document/list` | List all documents uploaded by user |
+| `GET`  | `/api/document/:id` | Fetch specific document details & AI analysis |
+| `DELETE` | `/api/document/:id` | Delete document record |
 
 ---
 
 ## 🚀 Quick Start Guide
 
 ### 1. Prerequisites
-Ensure Node.js (v18+) and npm are installed.
+Ensure **Node.js (v18+)** and **npm** are installed on your machine.
 
-### 2. Backend Setup
+### 2. Environment Setup
+Create a `.env` file in the `backend/` directory:
+
+```env
+PORT=5000
+JWT_SECRET=your_jwt_secret_key_here
+GEMINI_API_KEY=your_google_gemini_api_key
+SUPABASE_URL=your_supabase_url (optional)
+SUPABASE_ANON_KEY=your_supabase_anon_key (optional)
+```
+
+### 3. Local Execution
+
+Run the backend server:
 ```bash
 cd backend
 npm install
-```
-
-Configure `backend/.env`:
-```env
-PORT=5000
-JWT_SECRET=docpilot_ai_super_secret_jwt_key_2026
-GEMINI_API_KEY=your_gemini_api_key_here
-SUPABASE_URL=your_supabase_url_here (optional)
-SUPABASE_ANON_KEY=your_supabase_anon_key_here (optional)
-```
-
-Start the backend server:
-```bash
 npm run dev
-# Server will start on http://localhost:5000
+# Express server runs on http://localhost:5000
 ```
 
-### 3. Frontend Setup
-In a separate terminal:
+In a separate terminal, run the frontend:
 ```bash
 cd frontend
 npm install
 npm run dev
-# Frontend will start on http://localhost:3000
+# Vite dev server runs on http://localhost:3000
 ```
 
 ---
 
-## 🔗 API Routes Reference
+## 🌐 Deploying to Vercel
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/auth/register` | Register new user account |
-| `POST` | `/api/auth/login` | Login user & receive JWT token |
-| `GET`  | `/api/auth/me` | Fetch authenticated user profile |
-| `POST` | `/api/document/upload` | Upload document (PDF, PNG, JPG, JPEG) |
-| `POST` | `/api/document/analyze` | Process document with Gemini AI & return structured JSON |
-| `GET`  | `/api/document/list` | List all user uploaded documents |
-| `GET`  | `/api/document/:id` | Fetch specific document details & analysis |
-| `DELETE` | `/api/document/:id` | Delete document record |
+DocPilot AI is pre-configured for fullstack deployment on **Vercel**:
+
+1. Import your GitHub repository into Vercel.
+2. Ensure **Root Directory** is set to `./` (repository root).
+3. Add `GEMINI_API_KEY` under **Environment Variables** in Vercel.
+4. Click **Deploy**. Vercel will automatically build the Vite frontend and deploy Express API endpoints as Vercel Serverless Functions.
 
 ---
 
-## 🗄️ Supabase PostgreSQL Schema (Optional Setup)
+## 🗄️ Supabase Database Schema (Optional)
 
-Run the following DDL in your Supabase SQL Editor if connecting to Supabase:
+If connecting to Supabase PostgreSQL, execute the following DDL in your SQL Editor:
 
 ```sql
 CREATE TABLE IF NOT EXISTS users (
@@ -123,6 +180,14 @@ CREATE TABLE IF NOT EXISTS analysis_results (
   risk_explanation TEXT NOT NULL,
   recommendations JSONB NOT NULL DEFAULT '[]',
   extracted_data JSONB NOT NULL DEFAULT '{}',
+  health_score JSONB NOT NULL DEFAULT '{}',
+  fraud_detection JSONB NOT NULL DEFAULT '{}',
+  next_action JSONB NOT NULL DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
+
+---
+
+### 📄 License
+Built with ❤️ for enterprise intelligent document automation.
