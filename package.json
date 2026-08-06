@@ -9,5 +9,8 @@
   ],
   "scripts": {
     "build": "node -e \"if (require('fs').existsSync('frontend')) { require('child_process').execSync('cd frontend && npm run build', {stdio:'inherit'}); } else { require('child_process').execSync('npm run build', {stdio:'inherit'}); }\""
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.62.4"
   }
 }
