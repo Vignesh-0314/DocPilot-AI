@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const getApiKey = () => process.env.GEMINI_API_KEY || 'AIzaSyAZYAFCNF6qjY6CQrF8mejRCbeKEUG6_es';
+const getApiKey = () => process.env.GEMINI_API_KEY;
 
 function getHealthStatus(score) {
   if (score >= 90) return 'Excellent';
@@ -19,16 +19,14 @@ export const analyzeDocumentWithGemini = async (fileBuffer, mimeType, originalNa
     return generateFallbackAnalysis(originalName, mimeType);
   }
 
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
+  // Normalize mimeType for Gemini API
+  let normalizedMimeType = mimeType;
+  if (mimeType === 'image/jpg') normalizedMimeType = 'image/jpeg';
 
-    // Try high-precision multimodal models in order
-    const candidateModels = ['gemini-flash-latest', 'gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-pro-latest'];
-    let responseText = null;
+  const base64Data = fileBuffer.toString('base64');
+  const textContent = fileBuffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s+/g, ' ').trim();
 
-    const base64Data = fileBuffer.toString('base64');
-
-    const prompt = `You are an enterprise-grade Intelligent Document Processing (IDP) and Fraud Analysis AI engine with top-tier OCR capabilities.
+  const prompt = `You are an enterprise-grade Intelligent Document Processing (IDP) and Fraud Analysis AI engine with top-tier OCR capabilities.
 Analyze the provided document (${originalName}) with extreme accuracy. Read every line of text, table, header, stamp, signature, font, alignment, and footer carefully.
 
 Respond ONLY with valid JSON matching this exact structure:
@@ -94,28 +92,43 @@ Guidelines for analysis:
 
 Return STRICT JSON ONLY without markdown code block wrappers.`;
 
+  const candidateModels = ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash'];
+  let responseText = null;
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+
     for (const modelName of candidateModels) {
       try {
         console.log(`[Gemini Service] Attempting analysis with model: ${modelName}`);
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.1,
-          }
-        });
+        const model = genAI.getGenerativeModel({ model: modelName });
 
-        const result = await model.generateContent([
-          prompt,
-          {
-            inlineData: {
-              data: base64Data,
-              mimeType: mimeType
-            }
+        // Mode A: Multimodal Inline Data
+        if (['application/pdf', 'image/png', 'image/jpeg', 'image/webp'].includes(normalizedMimeType)) {
+          try {
+            const result = await model.generateContent([
+              prompt,
+              {
+                inlineData: {
+                  data: base64Data,
+                  mimeType: normalizedMimeType
+                }
+              }
+            ]);
+            responseText = result.response.text();
+          } catch (inlineErr) {
+            console.warn(`[Gemini Service] InlineData failed for ${modelName}: ${inlineErr.message}. Attempting text-prompt mode...`);
           }
-        ]);
+        }
 
-        responseText = result.response.text();
+        // Mode B: Text Prompt Fallback
+        if (!responseText && textContent.length > 10) {
+          const resultText = await model.generateContent([
+            `${prompt}\n\nDOCUMENT TEXT CONTENT (${originalName}):\n${textContent.substring(0, 12000)}`
+          ]);
+          responseText = resultText.response.text();
+        }
+
         if (responseText) {
           console.log(`[Gemini API Success with ${modelName}]`);
           break;
@@ -124,13 +137,18 @@ Return STRICT JSON ONLY without markdown code block wrappers.`;
         console.warn(`[Gemini Service] Model ${modelName} failed: ${err.message}. Trying next model...`);
       }
     }
+  } catch (keyErr) {
+    console.warn(`[Gemini Service] API key attempt failed: ${keyErr.message}`);
+  }
 
-    if (!responseText) {
-      throw new Error('All Gemini model candidates failed to generate a response.');
-    }
+  if (!responseText) {
+    console.error('[Gemini Service Error]: All Gemini model candidates failed to generate a response.');
+    return generateFallbackAnalysis(originalName, mimeType, 'Gemini API models unavailable or rate limited.');
+  }
 
-    console.log('[Gemini API Raw Response]:', responseText);
+  console.log('[Gemini API Raw Response]:', responseText);
 
+  try {
     // Clean JSON if enclosed in markdown code fences
     const cleanedText = responseText
       .replace(/^```json\s*/i, '')
@@ -183,10 +201,9 @@ Return STRICT JSON ONLY without markdown code block wrappers.`;
         reason: nextActionObj.reason || 'Document requires standard administrative verification.'
       }
     };
-
-  } catch (error) {
-    console.error('[Gemini Service Error]:', error);
-    return generateFallbackAnalysis(originalName, mimeType, error.message);
+  } catch (parseErr) {
+    console.error('[Gemini JSON Parse Error]:', parseErr, responseText);
+    return generateFallbackAnalysis(originalName, mimeType, 'Failed to parse AI response format.');
   }
 };
 
