@@ -200,6 +200,46 @@ export const login = async (req, res) => {
   }
 };
 
+export const googleAuth = async (req, res) => {
+  try {
+    const { name, email, googleId, picture } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required for Google sign in.' });
+    }
+
+    let user = await dbService.findUserByEmail(email);
+
+    if (!user) {
+      const dummyPassword = await bcrypt.hash(`GOOGLE_${googleId || Date.now()}_${Math.random()}`, 10);
+      user = await dbService.createUser({
+        name: name || email.split('@')[0],
+        email: email.toLowerCase(),
+        passwordHash: dummyPassword
+      });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, name: user.name },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      message: 'Google authentication successful',
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        picture
+      }
+    });
+  } catch (error) {
+    console.error('[Google Auth Error]:', error);
+    res.status(500).json({ error: 'Failed to authenticate with Google.' });
+  }
+};
+
 export const getMe = async (req, res) => {
   try {
     const user = await dbService.findUserById(req.user.id);
