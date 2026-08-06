@@ -35,9 +35,13 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`=================================================`);
-  console.log(`🚀 DocPilot AI Server running on port ${PORT}`);
-  console.log(`👉 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`=================================================`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`=================================================`);
+    console.log(`🚀 DocPilot AI Server running on port ${PORT}`);
+    console.log(`👉 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`=================================================`);
+  });
+}
+
+export default app;

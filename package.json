@@ -1,0 +1,13 @@
+{
+  "name": "docpilot-ai-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "build": "npm run build --prefix frontend"
+  }
+}
