@@ -3,12 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FileText, Sparkles, Lock, Mail, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { GoogleAuthModal } from '../components/GoogleAuthModal';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
 
   const { loginUser, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -31,21 +33,12 @@ export const Login = () => {
     }
   };
 
-  const handleGoogleAuth = async () => {
+  const handleSelectGoogleAccount = async (profile) => {
+    setIsGoogleModalOpen(false);
     setError('');
     setIsSubmitting(true);
     try {
-      const userGoogleEmail = window.prompt("Enter your Google Account email:", "sarah.jenkins@gmail.com");
-      if (!userGoogleEmail) {
-        setIsSubmitting(false);
-        return;
-      }
-      const userName = userGoogleEmail.split('@')[0];
-      await loginWithGoogle({
-        name: userName.charAt(0).toUpperCase() + userName.slice(1),
-        email: userGoogleEmail,
-        googleId: 'google_' + Date.now()
-      });
+      await loginWithGoogle(profile);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to authenticate with Google. Please try again.');
@@ -91,7 +84,7 @@ export const Login = () => {
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           type="button"
-          onClick={handleGoogleAuth}
+          onClick={() => setIsGoogleModalOpen(true)}
           disabled={isSubmitting}
           className="w-full mb-5 py-3 px-4 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow disabled:opacity-70"
         >
@@ -171,6 +164,12 @@ export const Login = () => {
           </Link>
         </div>
       </motion.div>
+
+      <GoogleAuthModal
+        isOpen={isGoogleModalOpen}
+        onClose={() => setIsGoogleModalOpen(false)}
+        onSelectAccount={handleSelectGoogleAccount}
+      />
     </div>
   );
 };

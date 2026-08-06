@@ -202,7 +202,22 @@ export const login = async (req, res) => {
 
 export const googleAuth = async (req, res) => {
   try {
-    const { name, email, googleId, picture } = req.body;
+    let { name, email, googleId, picture, credential } = req.body;
+
+    if (credential && !email) {
+      try {
+        const decoded = jwt.decode(credential);
+        if (decoded && decoded.email) {
+          email = decoded.email;
+          name = decoded.name || name;
+          googleId = decoded.sub || googleId;
+          picture = decoded.picture || picture;
+        }
+      } catch (e) {
+        console.warn('[Google Auth] Could not decode credential:', e.message);
+      }
+    }
+
     if (!email) {
       return res.status(400).json({ error: 'Email is required for Google sign in.' });
     }
