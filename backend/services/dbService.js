@@ -19,7 +19,7 @@ export const dbService = {
           .select()
           .single();
         if (!error && data) return data;
-        console.warn('[DB Error] Supabase user insert failed, using fallback store:', error?.message);
+        console.warn('[DB Error] Supabase user insert failed, using fallback store:', error?.message || error);
       } catch (err) {
         console.warn('[DB Exception] Supabase user insert failed, using fallback store:', err?.message || err);
       }
@@ -39,12 +39,15 @@ export const dbService = {
   async findUserByEmail(email) {
     if (supabase) {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('users')
           .select('*')
-          .eq('email', email)
-          .single();
+          .ilike('email', email)
+          .maybeSingle();
         if (data) return data;
+        if (error) {
+          console.warn('[DB Error] Supabase findUserByEmail error:', error.message);
+        }
       } catch (err) {
         console.warn('[DB Exception] Supabase findUserByEmail failed, using fallback store:', err?.message || err);
       }
@@ -55,12 +58,15 @@ export const dbService = {
   async findUserById(id) {
     if (supabase) {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('users')
           .select('id, name, email, created_at')
           .eq('id', id)
-          .single();
+          .maybeSingle();
         if (data) return data;
+        if (error) {
+          console.warn('[DB Error] Supabase findUserById error:', error.message);
+        }
       } catch (err) {
         console.warn('[DB Exception] Supabase findUserById failed, using fallback store:', err?.message || err);
       }
