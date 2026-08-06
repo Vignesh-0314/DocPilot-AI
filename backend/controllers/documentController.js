@@ -65,7 +65,10 @@ export const analyzeDocument = async (req, res) => {
       riskLevel: aiAnalysis.riskLevel,
       riskExplanation: aiAnalysis.riskExplanation,
       recommendations: aiAnalysis.recommendations,
-      extractedData: aiAnalysis.extractedData
+      extractedData: aiAnalysis.extractedData,
+      healthScore: aiAnalysis.healthScore,
+      fraudDetection: aiAnalysis.fraudDetection,
+      nextAction: aiAnalysis.nextAction
     });
 
     res.json({

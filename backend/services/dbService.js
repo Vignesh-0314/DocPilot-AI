@@ -109,7 +109,7 @@ export const dbService = {
     return doc;
   },
 
-  async saveAnalysisResult({ documentId, documentType, confidence, summary, riskLevel, riskExplanation, recommendations, extractedData }) {
+  async saveAnalysisResult({ documentId, documentType, confidence, summary, riskLevel, riskExplanation, recommendations, extractedData, healthScore, fraudDetection, nextAction }) {
     if (supabase) {
       try {
         // Update document status
@@ -125,7 +125,10 @@ export const dbService = {
             risk_level: riskLevel,
             risk_explanation: riskExplanation,
             recommendations,
-            extracted_data: extractedData
+            extracted_data: extractedData,
+            health_score: healthScore,
+            fraud_detection: fraudDetection,
+            next_action: nextAction
           }])
           .select()
           .single();
@@ -150,6 +153,9 @@ export const dbService = {
       risk_explanation: riskExplanation,
       recommendations,
       extracted_data: extractedData,
+      health_score: healthScore,
+      fraud_detection: fraudDetection,
+      next_action: nextAction,
       created_at: new Date().toISOString()
     };
     fallbackStore.analysisResults.push(result);
