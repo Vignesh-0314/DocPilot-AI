@@ -8,6 +8,6 @@
     "backend"
   ],
   "scripts": {
-    "build": "npm run build --prefix frontend"
+    "build": "cd frontend && npm run build"
   }
 }
