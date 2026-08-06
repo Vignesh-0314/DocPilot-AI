@@ -137,54 +137,6 @@ export const AnalysisResultView = ({ analysis, documentName }) => {
     }
   };
 
-  // --- Feature 3: Next Best Action Helper ---
-  const actionVal = nextAction?.action || 'Review';
-  const actionReason = nextAction?.reason || 'Document requires standard verification prior to final sign-off.';
-
-  const getActionConfig = (act) => {
-    switch (act) {
-      case 'Approve':
-        return {
-          icon: <CheckCircle2 className="w-7 h-7 text-emerald-600" />,
-          buttonBg: 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/25',
-          border: 'border-emerald-200 bg-emerald-50/40',
-          badgeBg: 'bg-emerald-100 text-emerald-800',
-          titleColor: 'text-emerald-900',
-          btnText: 'Approve Document'
-        };
-      case 'Reject':
-        return {
-          icon: <XCircle className="w-7 h-7 text-rose-600" />,
-          buttonBg: 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/25',
-          border: 'border-rose-200 bg-rose-50/40',
-          badgeBg: 'bg-rose-100 text-rose-800',
-          titleColor: 'text-rose-900',
-          btnText: 'Reject Document'
-        };
-      case 'Request More Information':
-      case 'Request Information':
-        return {
-          icon: <HelpCircle className="w-7 h-7 text-ocean-600" />,
-          buttonBg: 'bg-ocean-600 hover:bg-ocean-700 text-white shadow-ocean-500/25',
-          border: 'border-ocean-200 bg-ocean-50/40',
-          badgeBg: 'bg-ocean-100 text-ocean-800',
-          titleColor: 'text-ocean-900',
-          btnText: 'Request More Information'
-        };
-      default: // Review
-        return {
-          icon: <AlertTriangle className="w-7 h-7 text-amber-600" />,
-          buttonBg: 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/25',
-          border: 'border-amber-200 bg-amber-50/40',
-          badgeBg: 'bg-amber-100 text-amber-800',
-          titleColor: 'text-amber-900',
-          btnText: 'Flag for Manual Review'
-        };
-    }
-  };
-
-  const actionConfig = getActionConfig(actionVal);
-
   return (
     <div className="space-y-6">
       
@@ -381,49 +333,6 @@ export const AnalysisResultView = ({ analysis, documentName }) => {
         </motion.div>
 
       </div>
-
-      {/* ========================================================================= */}
-      {/* FEATURE 3: AI Next Best Action Card (Final Decision Card) */}
-      {/* ========================================================================= */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}
-        className={`p-6 sm:p-8 rounded-3xl border shadow-card transition-all ${actionConfig.border}`}
-      >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-start gap-4">
-            <div className="p-3 rounded-2xl bg-white shadow-sm border border-slate-200/80 shrink-0 mt-0.5">
-              {actionConfig.icon}
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-xs uppercase tracking-wider font-extrabold text-slate-400">
-                  AI Decision Engine • Next Best Action
-                </span>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider ${actionConfig.badgeBg}`}>
-                  {actionVal}
-                </span>
-              </div>
-              <h3 className={`text-xl font-black tracking-tight ${actionConfig.titleColor}`}>
-                Recommended Action: {actionVal}
-              </h3>
-              <p className="text-slate-700 text-sm leading-relaxed max-w-2xl mt-1">
-                {actionReason}
-              </p>
-            </div>
-          </div>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={`px-6 py-3.5 rounded-2xl font-bold text-sm shadow-lg flex items-center justify-center gap-2.5 transition-all shrink-0 ${actionConfig.buttonBg}`}
-          >
-            <span>{actionConfig.btnText}</span>
-            <ArrowRight className="w-4 h-4" />
-          </motion.button>
-        </div>
-      </motion.div>
 
       {/* Executive Summary Card */}
       <motion.div 
