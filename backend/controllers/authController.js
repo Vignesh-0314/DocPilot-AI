@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { dbService } from '../services/dbService.js';
-import { otpService } from '../services/otpService.js';
+import { emailVerificationService } from '../services/emailVerificationService.js';
 import { registerSchema, loginSchema } from '../validators/authValidator.js';
 import dotenv from 'dotenv';
 
@@ -9,7 +9,7 @@ dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'docpilot_ai_super_secret_jwt_key_2026';
 
-export const sendOTP = async (req, res) => {
+export const sendVerificationLink = async (req, res) => {
   try {
     const validatedData = registerSchema.parse(req.body);
     const { name, email, password } = validatedData;
@@ -22,32 +22,38 @@ export const sendOTP = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    const { otp, expiresAt } = otpService.generateOTP(email, name, passwordHash);
+    const originUrl = req.headers.origin || req.headers.referer?.replace(/\/$/, '') || 'http://localhost:3000';
+    const { token, verificationUrl, expiresAt } = emailVerificationService.createVerificationToken(
+      email,
+      name,
+      passwordHash,
+      originUrl
+    );
 
     res.json({
-      message: 'Verification code sent successfully.',
+      message: 'Verification email link generated successfully.',
       email,
-      otpForDemo: otp,
+      verificationUrl,
       expiresAt
     });
   } catch (error) {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message });
     }
-    console.error('[Send OTP Error]:', error);
-    res.status(500).json({ error: 'Failed to generate verification code.' });
+    console.error('[Send Verification Link Error]:', error);
+    res.status(500).json({ error: 'Failed to generate email verification link.' });
   }
 };
 
-export const verifyOTP = async (req, res) => {
+export const confirmEmail = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email, token } = req.body;
 
-    if (!email || !otp) {
-      return res.status(400).json({ error: 'Email and 6-digit verification code are required.' });
+    if (!email || !token) {
+      return res.status(400).json({ error: 'Email and verification token are required.' });
     }
 
-    const result = otpService.verifyOTP(email, otp);
+    const result = emailVerificationService.confirmVerificationToken(email, token);
     if (!result.success) {
       return res.status(400).json({ error: result.error });
     }
@@ -60,15 +66,15 @@ export const verifyOTP = async (req, res) => {
       passwordHash
     });
 
-    const token = jwt.sign(
+    const jwtToken = jwt.sign(
       { id: user.id, email: user.email, name: user.name },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
 
     res.status(201).json({
-      message: 'Account verified and created successfully.',
-      token,
+      message: 'Email confirmed and account logged in successfully.',
+      token: jwtToken,
       user: {
         id: user.id,
         name: user.name,
@@ -76,31 +82,32 @@ export const verifyOTP = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[Verify OTP Error]:', error);
-    res.status(500).json({ error: 'Failed to verify OTP code.' });
+    console.error('[Confirm Email Error]:', error);
+    res.status(500).json({ error: 'Failed to verify email link.' });
   }
 };
 
-export const resendOTP = async (req, res) => {
+export const resendVerificationLink = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
       return res.status(400).json({ error: 'Email address is required.' });
     }
 
-    const result = otpService.resendOTP(email);
+    const originUrl = req.headers.origin || req.headers.referer?.replace(/\/$/, '') || 'http://localhost:3000';
+    const result = emailVerificationService.resendVerificationLink(email, originUrl);
     if (!result.success) {
       return res.status(400).json({ error: result.error });
     }
 
     res.json({
-      message: 'New verification code sent successfully.',
+      message: 'New verification link sent successfully.',
       email,
-      otpForDemo: result.otp
+      verificationUrl: result.verificationUrl
     });
   } catch (error) {
-    console.error('[Resend OTP Error]:', error);
-    res.status(500).json({ error: 'Failed to resend verification code.' });
+    console.error('[Resend Verification Link Error]:', error);
+    res.status(500).json({ error: 'Failed to resend verification link.' });
   }
 };
 

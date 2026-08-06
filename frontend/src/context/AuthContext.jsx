@@ -26,13 +26,13 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  const sendOtp = async (name, email, password) => {
-    const res = await api.post('/auth/send-otp', { name, email, password });
+  const sendVerificationLink = async (name, email, password) => {
+    const res = await api.post('/auth/send-verification-link', { name, email, password });
     return res.data;
   };
 
-  const verifyOtp = async (email, otp) => {
-    const res = await api.post('/auth/verify-otp', { email, otp });
+  const confirmEmail = async (email, token) => {
+    const res = await api.post('/auth/confirm-email', { email, token });
     const { token: newToken, user: userData } = res.data;
     localStorage.setItem('docpilot_token', newToken);
     localStorage.setItem('docpilot_user', JSON.stringify(userData));
@@ -41,8 +41,8 @@ export const AuthProvider = ({ children }) => {
     return res.data;
   };
 
-  const resendOtp = async (email) => {
-    const res = await api.post('/auth/resend-otp', { email });
+  const resendVerificationLink = async (email) => {
+    const res = await api.post('/auth/resend-verification-link', { email });
     return res.data;
   };
 
@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, sendOtp, verifyOtp, resendOtp, loginUser, registerUser, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, sendVerificationLink, confirmEmail, resendVerificationLink, loginUser, registerUser, logout }}>
       {children}
     </AuthContext.Provider>
   );
