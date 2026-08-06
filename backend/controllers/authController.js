@@ -200,61 +200,6 @@ export const login = async (req, res) => {
   }
 };
 
-export const googleAuth = async (req, res) => {
-  try {
-    let { name, email, googleId, picture, credential } = req.body;
-
-    if (credential && !email) {
-      try {
-        const decoded = jwt.decode(credential);
-        if (decoded && decoded.email) {
-          email = decoded.email;
-          name = decoded.name || name;
-          googleId = decoded.sub || googleId;
-          picture = decoded.picture || picture;
-        }
-      } catch (e) {
-        console.warn('[Google Auth] Could not decode credential:', e.message);
-      }
-    }
-
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required for Google sign in.' });
-    }
-
-    let user = await dbService.findUserByEmail(email);
-
-    if (!user) {
-      const dummyPassword = await bcrypt.hash(`GOOGLE_${googleId || Date.now()}_${Math.random()}`, 10);
-      user = await dbService.createUser({
-        name: name || email.split('@')[0],
-        email: email.toLowerCase(),
-        passwordHash: dummyPassword
-      });
-    }
-
-    const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    res.json({
-      message: 'Google authentication successful',
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        picture
-      }
-    });
-  } catch (error) {
-    console.error('[Google Auth Error]:', error);
-    res.status(500).json({ error: 'Failed to authenticate with Google.' });
-  }
-};
-
 export const getMe = async (req, res) => {
   try {
     const user = await dbService.findUserById(req.user.id);
