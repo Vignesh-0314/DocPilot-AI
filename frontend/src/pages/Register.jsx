@@ -23,7 +23,10 @@ export const Register = () => {
       await registerUser(name, email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create account. Please try again.');
+      setError(
+        err.response?.data?.error ||
+        (!err.response ? 'Unable to connect to backend server. Please ensure Node.js server is running on port 5000.' : 'Failed to create account. Please try again.')
+      );
     } finally {
       setIsSubmitting(false);
     }

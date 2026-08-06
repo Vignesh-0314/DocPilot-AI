@@ -22,7 +22,10 @@ export const Login = () => {
       await loginUser(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to log in. Please check your credentials.');
+      setError(
+        err.response?.data?.error ||
+        (!err.response ? 'Unable to connect to backend server. Please ensure Node.js server is running on port 5000.' : 'Failed to log in. Please check your credentials.')
+      );
     } finally {
       setIsSubmitting(false);
     }

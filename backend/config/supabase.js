@@ -8,11 +8,11 @@ const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLIS
 
 let supabase = null;
 
-if (supabaseUrl && supabaseKey && supabaseUrl.startsWith('http')) {
+if (supabaseUrl && supabaseKey && supabaseUrl.startsWith('http') && supabaseKey.startsWith('eyJ')) {
   supabase = createClient(supabaseUrl, supabaseKey);
   console.log('[Database] Supabase client initialized.');
 } else {
-  console.log('[Database] Supabase credentials missing or invalid. Using local fallback database store.');
+  console.log('[Database] Supabase credentials missing, placeholder, or invalid. Using local fallback database store.');
 }
 
 export default supabase;
