@@ -4,6 +4,7 @@ import { dbService } from '../services/dbService.js';
 import { emailVerificationService } from '../services/emailVerificationService.js';
 import { sendVerificationEmail } from '../services/emailService.js';
 import { registerSchema, loginSchema } from '../validators/authValidator.js';
+import supabase from '../config/supabase.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -215,21 +216,67 @@ export const getMe = async (req, res) => {
 
 export const googleLogin = async (req, res) => {
   try {
-    const { email, name } = req.body;
+    let { email, name, accessToken, idToken } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required for Google authentication.' });
+    console.log('[Google Auth API] Incoming authentication request for:', email || 'token session');
+
+    // Verify token with Supabase Auth if provided
+    const authHeader = req.headers.authorization;
+    const tokenToVerify = accessToken || idToken || (authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null);
+
+    if (tokenToVerify && supabase) {
+      try {
+        const { data: authData, error: authError } = await supabase.auth.getUser(tokenToVerify);
+        if (!authError && authData?.user) {
+          email = authData.user.email || email;
+          name = authData.user.user_metadata?.full_name || authData.user.user_metadata?.name || name;
+          console.log(`[Google Auth API] Supabase token verified successfully for: ${email}`);
+        } else if (authError) {
+          console.warn('[Google Auth API] Supabase token check warning:', authError.message);
+        }
+      } catch (tokenErr) {
+        console.warn('[Google Auth API] Token check exception:', tokenErr.message);
+      }
     }
 
-    let user = await dbService.findUserByEmail(email);
+    if (!email) {
+      console.error('[Google Auth API Error] Missing email address in payload.');
+      return res.status(400).json({ error: 'Email address is required for Google authentication.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    let user = null;
+
+    try {
+      user = await dbService.findUserByEmail(cleanEmail);
+    } catch (findErr) {
+      console.error('[Google Auth API] findUserByEmail error:', findErr.message || findErr);
+    }
 
     if (!user) {
-      const displayName = name || email.split('@')[0];
-      user = await dbService.createUser({
-        name: displayName,
-        email,
-        passwordHash: null
-      });
+      const displayName = name || cleanEmail.split('@')[0];
+      console.log(`[Google Auth API] User ${cleanEmail} not found. Creating user in database...`);
+      try {
+        user = await dbService.createUser({
+          name: displayName,
+          email: cleanEmail,
+          passwordHash: 'OAUTH_GOOGLE_USER'
+        });
+        console.log(`[Google Auth API] User created successfully with ID: ${user.id}`);
+      } catch (createErr) {
+        console.error('[Google Auth API Fatal] createUser failed:', createErr.message || createErr);
+        return res.status(500).json({
+          error: 'Failed to create user profile in database.',
+          details: createErr.message
+        });
+      }
+    } else {
+      console.log(`[Google Auth API] Existing user found with ID: ${user.id}`);
+    }
+
+    if (!user || !user.id) {
+      console.error('[Google Auth API Error] Invalid user object resolved.');
+      return res.status(500).json({ error: 'Failed to resolve user account.' });
     }
 
     const token = jwt.sign(
@@ -248,8 +295,12 @@ export const googleLogin = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[Google Login Error]:', error);
-    res.status(500).json({ error: 'Server error during Google authentication.' });
+    console.error('[Google Auth API Fatal Error]:', error.stack || error.message || error);
+    res.status(500).json({
+      error: 'Server error during Google authentication.',
+      details: error.message
+    });
   }
 };
+
 

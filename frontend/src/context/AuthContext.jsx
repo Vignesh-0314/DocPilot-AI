@@ -19,7 +19,13 @@ export const AuthProvider = ({ children }) => {
           const email = session.user.email;
           const name = session.user.user_metadata?.full_name || session.user.user_metadata?.name || email?.split('@')[0];
           if (email) {
-            const res = await api.post('/auth/google', { email, name, googleId: session.user.id });
+            const res = await api.post('/auth/google', {
+              email,
+              name,
+              googleId: session.user.id,
+              accessToken: session.access_token,
+              idToken: session.provider_token
+            });
             const { token: newToken, user: userData } = res.data;
             localStorage.setItem('docpilot_token', newToken);
             localStorage.setItem('docpilot_user', JSON.stringify(userData));
@@ -57,7 +63,13 @@ export const AuthProvider = ({ children }) => {
           const name = session.user.user_metadata?.full_name || session.user.user_metadata?.name || email?.split('@')[0];
           if (email) {
             try {
-              const res = await api.post('/auth/google', { email, name, googleId: session.user.id });
+              const res = await api.post('/auth/google', {
+                email,
+                name,
+                googleId: session.user.id,
+                accessToken: session.access_token,
+                idToken: session.provider_token
+              });
               const { token: newToken, user: userData } = res.data;
               localStorage.setItem('docpilot_token', newToken);
               localStorage.setItem('docpilot_user', JSON.stringify(userData));

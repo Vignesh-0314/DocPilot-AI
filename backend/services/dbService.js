@@ -19,7 +19,7 @@ export const dbService = {
         .insert([{
           name,
           email: cleanEmail,
-          password_hash: passwordHash ?? null
+          password_hash: passwordHash || 'OAUTH_GOOGLE_USER'
         }])
         .select()
         .single();
@@ -35,7 +35,7 @@ export const dbService = {
       id: crypto.randomUUID(),
       name,
       email: cleanEmail,
-      password_hash: passwordHash ?? null,
+      password_hash: passwordHash || 'OAUTH_GOOGLE_USER',
       created_at: new Date().toISOString()
     };
     fallbackStore.users.push(newUser);
