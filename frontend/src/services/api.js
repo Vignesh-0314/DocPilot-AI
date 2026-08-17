@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+// Resolve Backend API URL dynamically from VITE_API_URL environment variable
+const rawApiUrl = import.meta.env.VITE_API_URL || 'https://docpilot-ai-nj60.onrender.com';
+const cleanBaseUrl = rawApiUrl.replace(/\/+$/, '');
+
+// Ensure /api suffix is appended without duplication
+const baseURL = cleanBaseUrl.endsWith('/api') ? cleanBaseUrl : `${cleanBaseUrl}/api`;
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
