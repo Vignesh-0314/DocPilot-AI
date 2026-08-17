@@ -1,7 +1,7 @@
 import supabase from '../config/supabase.js';
 import crypto from 'crypto';
 
-// In-memory fallback store
+// In-memory fallback store (only used when supabase === null)
 const fallbackStore = {
   users: [],
   documents: [],
@@ -11,25 +11,31 @@ const fallbackStore = {
 export const dbService = {
   // User operations
   async createUser({ name, email, passwordHash }) {
+    const cleanEmail = email.trim().toLowerCase();
+
     if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .insert([{ name, email, password_hash: passwordHash }])
-          .select()
-          .single();
-        if (!error && data) return data;
-        console.warn('[DB Error] Supabase user insert failed, using fallback store:', error?.message || error);
-      } catch (err) {
-        console.warn('[DB Exception] Supabase user insert failed, using fallback store:', err?.message || err);
+      const { data, error } = await supabase
+        .from('users')
+        .insert([{
+          name,
+          email: cleanEmail,
+          password_hash: passwordHash ?? null
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[Supabase Error] createUser failed:', error.message || error);
+        throw new Error(`Database error creating user: ${error.message}`);
       }
+      return data;
     }
-    
+
     const newUser = {
       id: crypto.randomUUID(),
       name,
-      email,
-      password_hash: passwordHash,
+      email: cleanEmail,
+      password_hash: passwordHash ?? null,
       created_at: new Date().toISOString()
     };
     fallbackStore.users.push(newUser);
@@ -37,40 +43,43 @@ export const dbService = {
   },
 
   async findUserByEmail(email) {
+    if (!email) return null;
+    const cleanEmail = email.trim().toLowerCase();
+
     if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .ilike('email', email)
-          .maybeSingle();
-        if (data) return data;
-        if (error) {
-          console.warn('[DB Error] Supabase findUserByEmail error:', error.message);
-        }
-      } catch (err) {
-        console.warn('[DB Exception] Supabase findUserByEmail failed, using fallback store:', err?.message || err);
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .ilike('email', cleanEmail)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[Supabase Error] findUserByEmail failed:', error.message || error);
+        throw new Error(`Database error looking up user: ${error.message}`);
       }
+      return data;
     }
-    return fallbackStore.users.find(u => u.email.toLowerCase() === email.toLowerCase()) || null;
+
+    return fallbackStore.users.find(u => u.email.toLowerCase() === cleanEmail) || null;
   },
 
   async findUserById(id) {
+    if (!id) return null;
+
     if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('id, name, email, created_at')
-          .eq('id', id)
-          .maybeSingle();
-        if (data) return data;
-        if (error) {
-          console.warn('[DB Error] Supabase findUserById error:', error.message);
-        }
-      } catch (err) {
-        console.warn('[DB Exception] Supabase findUserById failed, using fallback store:', err?.message || err);
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, name, email, created_at')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[Supabase Error] findUserById failed:', error.message || error);
+        throw new Error(`Database error looking up user by ID: ${error.message}`);
       }
+      return data;
     }
+
     const user = fallbackStore.users.find(u => u.id === id);
     if (!user) return null;
     const { password_hash, ...userWithoutPassword } = user;
@@ -80,24 +89,25 @@ export const dbService = {
   // Document operations
   async createDocument({ userId, filename, originalName, fileType, fileSize, fileData }) {
     if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('documents')
-          .insert([{
-            user_id: userId,
-            filename,
-            original_name: originalName,
-            file_type: fileType,
-            file_size: fileSize,
-            file_data: fileData,
-            status: 'uploaded'
-          }])
-          .select()
-          .single();
-        if (!error && data) return data;
-      } catch (err) {
-        console.warn('[DB Exception] Supabase createDocument failed, using fallback store:', err?.message || err);
+      const { data, error } = await supabase
+        .from('documents')
+        .insert([{
+          user_id: userId,
+          filename,
+          original_name: originalName,
+          file_type: fileType,
+          file_size: fileSize,
+          file_data: fileData,
+          status: 'uploaded'
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[Supabase Error] createDocument failed:', error.message || error);
+        throw new Error(`Database error creating document: ${error.message}`);
       }
+      return data;
     }
 
     const doc = {
@@ -117,35 +127,42 @@ export const dbService = {
 
   async saveAnalysisResult({ documentId, documentType, confidence, summary, riskLevel, riskExplanation, recommendations, extractedData, healthScore, fraudDetection, nextAction }) {
     if (supabase) {
-      try {
-        // Update document status
-        await supabase.from('documents').update({ status: 'analyzed' }).eq('id', documentId);
+      // Update document status
+      const { error: updateErr } = await supabase
+        .from('documents')
+        .update({ status: 'analyzed' })
+        .eq('id', documentId);
 
-        const { data, error } = await supabase
-          .from('analysis_results')
-          .insert([{
-            document_id: documentId,
-            document_type: documentType,
-            confidence,
-            summary,
-            risk_level: riskLevel,
-            risk_explanation: riskExplanation,
-            recommendations,
-            extracted_data: extractedData,
-            health_score: healthScore,
-            fraud_detection: fraudDetection,
-            next_action: nextAction
-          }])
-          .select()
-          .single();
-
-        if (!error && data) return data;
-      } catch (err) {
-        console.warn('[DB Exception] Supabase saveAnalysisResult failed, using fallback store:', err?.message || err);
+      if (updateErr) {
+        console.warn('[Supabase Warning] Failed to update document status:', updateErr.message);
       }
+
+      const { data, error } = await supabase
+        .from('analysis_results')
+        .insert([{
+          document_id: documentId,
+          document_type: documentType,
+          confidence: confidence ?? 85,
+          summary: summary || '',
+          risk_level: riskLevel || 'Low',
+          risk_explanation: riskExplanation || '',
+          recommendations: recommendations || [],
+          extracted_data: extractedData || {},
+          health_score: healthScore || {},
+          fraud_detection: fraudDetection || {},
+          next_action: nextAction || {}
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[Supabase Error] saveAnalysisResult failed:', error.message || error);
+        throw new Error(`Database error saving analysis result: ${error.message}`);
+      }
+      return data;
     }
 
-    // Fallback updates
+    // Fallback store updates
     const doc = fallbackStore.documents.find(d => d.id === documentId);
     if (doc) doc.status = 'analyzed';
 
@@ -169,21 +186,23 @@ export const dbService = {
   },
 
   async getUserDocuments(userId) {
-    if (supabase) {
-      try {
-        const { data } = await supabase
-          .from('documents')
-          .select(`
-            *,
-            analysis_results (*)
-          `)
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false });
+    if (!userId) return [];
 
-        if (data) return data;
-      } catch (err) {
-        console.warn('[DB Exception] Supabase getUserDocuments failed, using fallback store:', err?.message || err);
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('documents')
+        .select(`
+          *,
+          analysis_results (*)
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('[Supabase Error] getUserDocuments failed:', error.message || error);
+        throw new Error(`Database error retrieving user documents: ${error.message}`);
       }
+      return data || [];
     }
 
     return fallbackStore.documents
@@ -196,22 +215,24 @@ export const dbService = {
   },
 
   async getDocumentById(id, userId) {
-    if (supabase) {
-      try {
-        const { data } = await supabase
-          .from('documents')
-          .select(`
-            *,
-            analysis_results (*)
-          `)
-          .eq('id', id)
-          .eq('user_id', userId)
-          .single();
+    if (!id || !userId) return null;
 
-        if (data) return data;
-      } catch (err) {
-        console.warn('[DB Exception] Supabase getDocumentById failed, using fallback store:', err?.message || err);
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('documents')
+        .select(`
+          *,
+          analysis_results (*)
+        `)
+        .eq('id', id)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[Supabase Error] getDocumentById failed:', error.message || error);
+        throw new Error(`Database error retrieving document: ${error.message}`);
       }
+      return data;
     }
 
     const doc = fallbackStore.documents.find(d => d.id === id && d.user_id === userId);
@@ -225,13 +246,25 @@ export const dbService = {
   },
 
   async deleteDocument(id, userId) {
+    if (!id || !userId) return false;
+
     if (supabase) {
-      try {
-        await supabase.from('documents').delete().eq('id', id).eq('user_id', userId);
-      } catch (err) {
-        console.warn('[DB Exception] Supabase deleteDocument failed, using fallback store:', err?.message || err);
+      // Delete analysis_results first if cascade constraint isn't set
+      await supabase.from('analysis_results').delete().eq('document_id', id);
+
+      const { error } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('[Supabase Error] deleteDocument failed:', error.message || error);
+        throw new Error(`Database error deleting document: ${error.message}`);
       }
+      return true;
     }
+
     fallbackStore.documents = fallbackStore.documents.filter(d => !(d.id === id && d.user_id === userId));
     fallbackStore.analysisResults = fallbackStore.analysisResults.filter(r => r.document_id !== id);
     return true;
