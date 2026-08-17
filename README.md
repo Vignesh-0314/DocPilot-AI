@@ -32,9 +32,12 @@ Manual processing of these documents leads to severe operational bottlenecks:
 ## 🌟 Key Features
 
 ### 🔐 1. Authentication & Security
-- User registration and login powered by **JSON Web Tokens (JWT)** and **bcryptjs** password hashing.
+- Dual Authentication System:
+  - **Email + Password**: Account registration and login powered by **JSON Web Tokens (JWT)** and **bcryptjs** password hashing.
+  - **Continue with Google**: Seamless OAuth 2.0 authentication powered by **Supabase Auth**.
 - Request payload validation using **Zod** schemas.
 - Protected frontend routes and automated HTTP request headers via Axios interceptors.
+- Automatic association with existing application user records to prevent duplicate accounts for the same email.
 
 ### 🧠 2. Multimodal AI Analysis Engine (Google Gemini)
 - **Automatic Document Classification**: Detects document type (*Invoice, Resume, Contract, Medical Report, Bank Statement, Government Document, etc.*).
@@ -87,8 +90,9 @@ Manual processing of these documents leads to severe operational bottlenecks:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/auth/register` | Register new user account |
-| `POST` | `/api/auth/login` | Authenticate user & issue JWT token |
+| `POST` | `/api/auth/register` | Register new email/password account |
+| `POST` | `/api/auth/login` | Authenticate with email/password & issue JWT token |
+| `POST` | `/api/auth/google` | Authenticate/sync Google OAuth user & issue JWT token |
 | `GET`  | `/api/auth/me` | Fetch active user profile |
 | `POST` | `/api/document/upload` | Upload document (PDF, PNG, JPG, JPEG up to 10MB) |
 | `POST` | `/api/document/analyze` | Process document with Gemini AI Engine |
@@ -98,20 +102,60 @@ Manual processing of these documents leads to severe operational bottlenecks:
 
 ---
 
+## 🔑 Google OAuth Setup Guide (Supabase + Google Cloud)
+
+To enable "Continue with Google" authentication in local development or production:
+
+### 1. Configure Google Cloud Console
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) and create a project or select an existing one.
+2. Go to **APIs & Services** $\rightarrow$ **OAuth consent screen**, select **External**, fill in app details (App Name: `DocPilot AI`, User support email, Developer contact).
+3. Go to **APIs & Services** $\rightarrow$ **Credentials** $\rightarrow$ **Create Credentials** $\rightarrow$ **OAuth client ID**.
+4. Application Type: **Web Application**.
+5. Name: `DocPilot AI Supabase OAuth`.
+6. Under **Authorized Redirect URIs**, add your Supabase Callback URL:
+   `https://<YOUR_SUPABASE_PROJECT_REF>.supabase.co/auth/v1/callback`
+7. Click **Create** and copy your **Client ID** and **Client Secret**.
+
+### 2. Configure Supabase Auth Provider
+1. Log in to your [Supabase Dashboard](https://supabase.com/dashboard).
+2. Select your project $\rightarrow$ Go to **Authentication** $\rightarrow$ **Providers**.
+3. Locate **Google** under Social Auth providers and click to edit.
+4. Toggle **Enable Google provider** to ON.
+5. Paste your Google **Client ID** and **Client Secret**.
+6. Save the settings.
+
+### 3. Configure Supabase Site URL & Redirects
+1. In Supabase Dashboard, go to **Authentication** $\rightarrow$ **URL Configuration**.
+2. Set **Site URL** to your frontend URL (e.g. `http://localhost:3000` or `https://docpilot-ai.vercel.app`).
+3. Under **Redirect URLs**, add:
+   - `http://localhost:3000/login`
+   - `http://localhost:3000/register`
+   - `https://docpilot-ai.vercel.app/login`
+   - `https://docpilot-ai.vercel.app/register`
+
+---
+
 ## 🚀 Quick Start Guide
 
 ### 1. Prerequisites
 Ensure **Node.js (v18+)** and **npm** are installed on your machine.
 
 ### 2. Environment Setup
-Create a `.env` file in the `backend/` directory:
 
+**Backend (`backend/.env`)**:
 ```env
 PORT=5000
 JWT_SECRET=your_jwt_secret_key_here
 GEMINI_API_KEY=your_google_gemini_api_key
-SUPABASE_URL=your_supabase_url (optional)
-SUPABASE_ANON_KEY=your_supabase_anon_key (optional)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_key
+SUPABASE_SECRET_KEY=sb_secret_key
+```
+
+**Frontend (`frontend/.env`)**:
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_or_anon_key
 ```
 
 ### 3. Local Execution
@@ -134,27 +178,27 @@ npm run dev
 
 ---
 
-## 🌐 Deploying to Vercel
+## 🌐 Deploying to Vercel & Render
 
-DocPilot AI is pre-configured for fullstack deployment on **Vercel**:
+DocPilot AI supports fullstack deployment with **Vercel** (Frontend) and **Render** (Backend):
 
-1. Import your GitHub repository into Vercel.
-2. Ensure **Root Directory** is set to `./` (repository root).
-3. Add `GEMINI_API_KEY` under **Environment Variables** in Vercel.
-4. Click **Deploy**. Vercel will automatically build the Vite frontend and deploy Express API endpoints as Vercel Serverless Functions.
+1. **Frontend (Vercel)**:
+   - Environment variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+2. **Backend (Render)**:
+   - Environment variables: `JWT_SECRET`, `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`.
 
 ---
 
-## 🗄️ Supabase Database Schema (Optional)
+## 🗄️ Supabase Database Schema
 
-If connecting to Supabase PostgreSQL, execute the following DDL in your SQL Editor:
+Execute the following DDL in your Supabase SQL Editor:
 
 ```sql
 CREATE TABLE IF NOT EXISTS users (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
+  password_hash TEXT, -- Optional for OAuth users
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

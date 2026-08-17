@@ -212,3 +212,44 @@ export const getMe = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch user details.' });
   }
 };
+
+export const googleLogin = async (req, res) => {
+  try {
+    const { email, name } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required for Google authentication.' });
+    }
+
+    let user = await dbService.findUserByEmail(email);
+
+    if (!user) {
+      const displayName = name || email.split('@')[0];
+      user = await dbService.createUser({
+        name: displayName,
+        email,
+        passwordHash: null
+      });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, name: user.name },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      message: 'Google authentication successful',
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error('[Google Login Error]:', error);
+    res.status(500).json({ error: 'Server error during Google authentication.' });
+  }
+};
+
